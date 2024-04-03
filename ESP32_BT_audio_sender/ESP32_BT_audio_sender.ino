@@ -239,7 +239,7 @@ void mp3Task(void* vargs) {
   while (1) {
     if (!play_in_progress) {
 nxt_file:  songFile = nextFile(&songFolder);
-      if (isValidFile(songFile) && !isDirectory(songFile)) {
+      if (isValidFile(&songFile) && !isDirectory(&songFile)) {
         songFile.entryIndex = 0;
         Serial.printf("currently playing=%s\n", fileName);
         fileTotalBytesRead = 0;
@@ -279,7 +279,7 @@ nxt_file:  songFile = nextFile(&songFolder);
 void setup() {
   Serial.begin(115200);
   initOled();
-  IR_control_init();
+  IR_receiver_init(4);
   mp3dec_init(&mp3d);
   pinMode(LED, OUTPUT);
   if (!mySdFat_init())
@@ -289,15 +289,15 @@ void setup() {
   }
 
   songFolder = pathExists("/mp3-songs");
-  if (startCluster(songFolder) == 0)
+  if (startCluster(&songFolder) == 0)
   {
     Serial.println("Invalid Path");
     while (1);
   }
 
-  while (!isEndOfDir(songFile = nextFile(&songFolder)))
+  while (!isEndOfDir(&(songFile = nextFile(&songFolder))))
   {
-    if (isValidFile(songFile) && !isDirectory(songFile) && isMp3File(fileName))
+    if (isValidFile(&songFile) && !isDirectory(&songFile) && isMp3File(fileName))
       songEntIndex[songIndex++] = songFolder.entryIndex - (fileLfnEntCnt(&songFile) + 1);
   }
 
@@ -371,7 +371,7 @@ void mp3ReadIR()
         paused = true;
       }
     }
-    id_data.updated = false;
+    ir_data.updated = false;
   }
 }
 

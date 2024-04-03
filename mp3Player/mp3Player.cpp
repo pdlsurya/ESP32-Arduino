@@ -12,6 +12,7 @@
 #include "minimp3.h"
 
 #define SPEAKER_PIN 25
+#define LED 2
 
 #define NEXT_TRACK_CMD 31
 #define PREV_TRACK_CMD 30
@@ -29,7 +30,7 @@
 // hw_timer_t *btnDebTimer = NULL;
 // hw_timer_t *i2sLoadTimer = NULL;
 
-volatile uint8_t volume_level = 5;
+uint8_t volume_level = 5;
 volatile bool paused = false;
 volatile bool next = false;
 volatile bool prev = false;
@@ -37,6 +38,7 @@ volatile bool shuffle = false;
 volatile bool fast_forward = false;
 bool play_in_progress = false;
 uint16_t ff_loop_cnt;
+static bool led_state = false;
 
 uint16_t timeCnt = 0;
 uint16_t total_duration;
@@ -147,12 +149,12 @@ bool mp3Player_init(const char *songsPath)
         return false;
 
     songFolder = pathExists(songsPath);
-    if (startCluster(songFolder) == 0)
+    if (startCluster(&songFolder) == 0)
         return false;
 
-    while (!isEndOfDir(songFile = nextFile(&songFolder)))
+    while (!isEndOfDir(&(songFile = nextFile(&songFolder))))
     {
-        if (isValidFile(songFile) && !isDirectory(songFile) && isMp3File(fileName))
+        if (isValidFile(&songFile) && !isDirectory(&songFile) && isMp3File(fileName))
             songEntIndex[songIndex++] = songFolder.entryIndex - (fileLfnEntCnt(&songFile) + 1);
     }
 
@@ -306,6 +308,8 @@ void mp3DecodePlay()
 
         if (timeCnt == 10)
         {
+            led_state = !led_state;
+            digitalWrite(LED, led_state);
             seconds = (decoded / info.hz);
             displayInfo();
         }
@@ -348,9 +352,8 @@ void mp3PlayerProcess()
         if (!play_in_progress)
         {
             songFile = nextFile(&songFolder);
-            if (isValidFile(songFile) && !isDirectory(songFile))
+            if (isValidFile(&songFile) && !isDirectory(&songFile))
             {
-                songFile.entryIndex = 0;
                 memset(songName, 0, sizeof(songName));
                 Serial.print("Currently playing: ");
                 Serial.println(fileName);
@@ -372,7 +375,6 @@ void mp3PlayerProcess()
                 timeCnt = 0;
 
                 // initially decode one frame to retrived mp3 info.
-
                 mp3DecodePlay();
 
                 total_duration = (fileSize(&songFile) - 128) / (((info.bitrate_kbps == 64 ? 128 : info.bitrate_kbps) * 1000) / 8);
