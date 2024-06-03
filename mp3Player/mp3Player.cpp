@@ -148,8 +148,8 @@ bool mp3Player_init(const char *songsPath)
     if (!mySdFat_init())
         return false;
 
-    songFolder = pathExists(songsPath);
-    if (startCluster(&songFolder) == 0)
+    songFolder = fileOpen(songsPath, NULL);
+    if (!isValidFile(&songFolder))
         return false;
 
     while (!isEndOfDir(&(songFile = nextFile(&songFolder))))
